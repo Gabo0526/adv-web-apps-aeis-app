@@ -10,6 +10,10 @@ import ForgotPassword from './features/auth/ForgotPassword';
 import ResetPassword from './features/auth/ResetPassword';
 import Verify from './features/auth/Verify';
 import Home from './features/home/Home';
+import LockerGrid from './features/lockers/LockerGrid';
+import PayphoneCheckout from './features/payment/PayphoneCheckout';
+import PaymentResult from './features/payment/PaymentResult';
+import MyRentals from './features/rentals/MyRentals';
 import ComingSoon from './components/ComingSoon';
 
 function App() {
@@ -23,11 +27,13 @@ function App() {
           <Route path={ROUTES.FORGOT_PASSWORD} element={<ForgotPassword />} />
           <Route path={ROUTES.RESET_PASSWORD} element={<ResetPassword />} />
           <Route path={ROUTES.VERIFY} element={<Verify />} />
+          <Route path={ROUTES.PAYMENT_RESULT} element={<PaymentResult />} />
 
           <Route element={<ProtectedRoute />}>
             <Route path={ROUTES.HOME} element={<Home />} />
-            <Route path={ROUTES.LOCKERS} element={<ComingSoon title="Casilleros" />} />
-            <Route path={ROUTES.MY_RENTALS} element={<ComingSoon title="Mis Alquileres" />} />
+            <Route path={ROUTES.LOCKERS} element={<LockerGrid />} />
+            <Route path={ROUTES.PAYMENT_CHECKOUT} element={<PayphoneCheckout />} />
+            <Route path={ROUTES.MY_RENTALS} element={<MyRentals />} />
             <Route path={ROUTES.HELP} element={<ComingSoon title="Ayuda" />} />
           </Route>
 

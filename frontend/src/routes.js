@@ -7,6 +7,8 @@ export const ROUTES = {
   HOME: '/home',
   LOCKERS: '/lockers',
   MY_RENTALS: '/rentals/mine',
+  PAYMENT_CHECKOUT: '/payment/checkout',
+  PAYMENT_RESULT: '/payment/result',
   HELP: '/help',
   ADMIN_PERIODS: '/admin/periods',
   ADMIN_RENTALS: '/admin/rentals',

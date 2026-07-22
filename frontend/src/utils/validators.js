@@ -69,12 +69,13 @@ export function validateDateRange(startDate, endDate) {
 
 export function validateCustomRentalRange(startDate, endDate, maxDays = 15) {
   if (!startDate || !endDate) return 'Ambas fechas son requeridas';
-  const start = new Date(startDate);
-  const end = new Date(endDate);
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  if (start < today) return 'La fecha de inicio no puede ser en el pasado';
-  if (start >= end) return 'La fecha de inicio debe ser anterior a la fecha de fin';
+  // Comparación como strings "YYYY-MM-DD": evita desfases de huso horario
+  // entre el "hoy" local y el parseo UTC de fechas sin hora (new Date('YYYY-MM-DD')).
+  const todayStr = new Date().toLocaleDateString('en-CA');
+  if (startDate < todayStr) return 'La fecha de inicio no puede ser en el pasado';
+  if (startDate >= endDate) return 'La fecha de inicio debe ser anterior a la fecha de fin';
+  const start = new Date(`${startDate}T00:00:00`);
+  const end = new Date(`${endDate}T00:00:00`);
   const days = (end - start) / (1000 * 60 * 60 * 24);
   if (days > maxDays) return `El rango no puede superar los ${maxDays} días`;
   return null;

@@ -36,3 +36,10 @@ export const ROLES = {
   ADMIN: 'ADMIN',
   USER: 'USER',
 };
+
+// Debe reflejar exactamente LockerRentalSetting del rental-service (§14.4 del PLAN).
+export const RENTAL_SETTINGS = {
+  PERIOD_RENT_PRICE: 6.5,
+  CUSTOM_RENT_DAILY_PRICE: 1,
+  MAX_RENT_DAYS: 15,
+};

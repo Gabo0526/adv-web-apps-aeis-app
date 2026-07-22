@@ -1,0 +1,58 @@
+.locker-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.25rem;
+  margin-bottom: 1.5rem;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+.locker-legend__item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.locker-legend__swatch {
+  width: 0.85rem;
+  height: 0.85rem;
+  border-radius: 4px;
+  display: inline-block;
+}
+
+.locker-block {
+  margin-bottom: 1.5rem;
+}
+
+.locker-block__title {
+  margin: 0 0 1.25rem;
+  color: var(--text-main);
+}
+
+.locker-block__grid {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.locker-cell {
+  aspect-ratio: 1;
+  border: none;
+  border-radius: 8px;
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.95rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: not-allowed;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.locker-cell--available {
+  cursor: pointer;
+}
+
+.locker-cell--available:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow);
+}
