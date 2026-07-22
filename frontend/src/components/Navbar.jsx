@@ -12,7 +12,9 @@ const NAV_ITEMS = [
 
 const ADMIN_NAV_ITEMS = [
   { to: ROUTES.ADMIN_PERIODS, icon: 'fa-calendar-days', label: 'Períodos' },
+  { to: ROUTES.ADMIN_BLOCKS_NEW, icon: 'fa-square-plus', label: 'Nuevo Bloque' },
   { to: ROUTES.ADMIN_RENTALS, icon: 'fa-file-invoice-dollar', label: 'Rentas' },
+  { to: ROUTES.ADMIN_RENTALS_EXCEPTIONAL, icon: 'fa-user-clock', label: 'Renta Excepcional' },
   { to: ROUTES.ADMIN_USERS, icon: 'fa-users', label: 'Usuarios' },
 ];
 

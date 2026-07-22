@@ -15,6 +15,11 @@ import PayphoneCheckout from './features/payment/PayphoneCheckout';
 import PaymentResult from './features/payment/PaymentResult';
 import MyRentals from './features/rentals/MyRentals';
 import ComingSoon from './components/ComingSoon';
+import Periods from './features/admin/Periods';
+import CreateBlock from './features/admin/CreateBlock';
+import Rentals from './features/admin/Rentals';
+import ExceptionalRental from './features/admin/ExceptionalRental';
+import Users from './features/admin/Users';
 
 function App() {
   return (
@@ -38,9 +43,11 @@ function App() {
           </Route>
 
           <Route element={<AdminRoute />}>
-            <Route path={ROUTES.ADMIN_PERIODS} element={<ComingSoon title="Períodos" />} />
-            <Route path={ROUTES.ADMIN_RENTALS} element={<ComingSoon title="Rentas" />} />
-            <Route path={ROUTES.ADMIN_USERS} element={<ComingSoon title="Usuarios" />} />
+            <Route path={ROUTES.ADMIN_PERIODS} element={<Periods />} />
+            <Route path={ROUTES.ADMIN_BLOCKS_NEW} element={<CreateBlock />} />
+            <Route path={ROUTES.ADMIN_RENTALS} element={<Rentals />} />
+            <Route path={ROUTES.ADMIN_RENTALS_EXCEPTIONAL} element={<ExceptionalRental />} />
+            <Route path={ROUTES.ADMIN_USERS} element={<Users />} />
           </Route>
 
           <Route path="*" element={<Navigate to={ROUTES.HOME} replace />} />

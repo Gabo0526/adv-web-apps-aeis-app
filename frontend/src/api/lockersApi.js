@@ -7,3 +7,7 @@ export function getLockerBlocks() {
 export function getLockersByBlock(blockId) {
   return client.get(`/lockers/block/${blockId}`).then((res) => res.data);
 }
+
+export function createLockerBlock(payload) {
+  return client.post('/locker-blocks', payload).then((res) => res.data);
+}

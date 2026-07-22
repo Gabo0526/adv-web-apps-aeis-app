@@ -11,6 +11,8 @@ export const ROUTES = {
   PAYMENT_RESULT: '/payment/result',
   HELP: '/help',
   ADMIN_PERIODS: '/admin/periods',
+  ADMIN_BLOCKS_NEW: '/admin/blocks/new',
   ADMIN_RENTALS: '/admin/rentals',
+  ADMIN_RENTALS_EXCEPTIONAL: '/admin/rentals/exceptional',
   ADMIN_USERS: '/admin/users',
 };

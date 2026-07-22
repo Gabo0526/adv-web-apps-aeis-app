@@ -19,3 +19,11 @@ export function forgotPassword(email) {
 export function resetPassword(token, newPassword) {
   return client.post('/auth/reset-password', { token, newPassword }).then((res) => res.data);
 }
+
+export function getUsers({ page = 0, size = 10 } = {}) {
+  return client.get('/users', { params: { page, size } }).then((res) => res.data);
+}
+
+export function searchUsersByIdPrefix(idPrefix) {
+  return client.get('/users/search', { params: { idPrefix } }).then((res) => res.data);
+}

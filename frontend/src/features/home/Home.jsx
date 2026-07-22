@@ -14,7 +14,9 @@ const QUICK_LINKS = [
 
 const ADMIN_LINKS = [
   { to: ROUTES.ADMIN_PERIODS, icon: 'fa-calendar-days', title: 'Períodos', desc: 'Gestiona los períodos de arriendo.' },
+  { to: ROUTES.ADMIN_BLOCKS_NEW, icon: 'fa-square-plus', title: 'Nuevo Bloque', desc: 'Crea un nuevo bloque de casilleros.' },
   { to: ROUTES.ADMIN_RENTALS, icon: 'fa-file-invoice-dollar', title: 'Rentas', desc: 'Consulta, filtra y exporta las rentas.' },
+  { to: ROUTES.ADMIN_RENTALS_EXCEPTIONAL, icon: 'fa-user-clock', title: 'Renta Excepcional', desc: 'Registra una renta manual para un usuario.' },
   { to: ROUTES.ADMIN_USERS, icon: 'fa-users', title: 'Usuarios', desc: 'Administra los usuarios del sistema.' },
 ];
 
