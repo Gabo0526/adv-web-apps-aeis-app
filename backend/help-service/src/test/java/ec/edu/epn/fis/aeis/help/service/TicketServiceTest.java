@@ -158,13 +158,24 @@ class TicketServiceTest {
             return m;
         });
 
-        ticketService.sendMessage("1", "jdoe", "USER", "hola admin");
+        ticketService.sendMessage("1", "user-u1", "USER", "hola admin");
 
         verify(messageRepository).save(any(Message.class));
         ArgumentCaptor<MessageDTO> captor = ArgumentCaptor.forClass(MessageDTO.class);
         verify(messagingTemplate).convertAndSend(eq("/topic/tickets/1"), captor.capture());
         assertEquals("hola admin", captor.getValue().getContent());
         assertFalse(captor.getValue().isTicketClosed());
+    }
+
+    @Test
+    void sendMessage_fromUserWhoDoesNotOwnTicket_isIgnored() {
+        Ticket t = ticket("1", "u1", TicketStatus.OPEN, Instant.now());
+        when(ticketRepository.findById("1")).thenReturn(Optional.of(t));
+
+        ticketService.sendMessage("1", "otro-usuario", "USER", "no soy el dueño");
+
+        verify(messageRepository, never()).save(any(Message.class));
+        verify(messagingTemplate, never()).convertAndSend(eq("/topic/tickets/1"), any(MessageDTO.class));
     }
 
     @Test

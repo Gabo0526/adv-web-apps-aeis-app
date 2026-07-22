@@ -86,6 +86,9 @@ public class TicketService {
         }
 
         SenderRole senderRole = "ADMIN".equals(senderRoleStr) ? SenderRole.ADMIN : SenderRole.USER;
+        if (senderRole != SenderRole.ADMIN && !ticket.getUsername().equals(senderUsername)) {
+            return;
+        }
         Message message = Message.builder()
                 .ticketId(ticketId)
                 .senderUsername(senderUsername)
