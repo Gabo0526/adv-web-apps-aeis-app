@@ -1,0 +1,87 @@
+name: aeis
+
+networks:
+  aeis-net:
+    driver: bridge
+
+volumes:
+  mysql-auth-data:
+  mysql-locker-data:
+  mysql-rental-data:
+  mongo-help-data:
+
+services:
+  mysql-auth:
+    image: mysql:8.4
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_AUTH_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_AUTH_DATABASE}
+      MYSQL_USER: ${MYSQL_AUTH_USER}
+      MYSQL_PASSWORD: ${MYSQL_AUTH_PASSWORD}
+    volumes:
+      - mysql-auth-data:/var/lib/mysql
+    networks:
+      - aeis-net
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_AUTH_ROOT_PASSWORD}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  mysql-locker:
+    image: mysql:8.4
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_LOCKER_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_LOCKER_DATABASE}
+      MYSQL_USER: ${MYSQL_LOCKER_USER}
+      MYSQL_PASSWORD: ${MYSQL_LOCKER_PASSWORD}
+    volumes:
+      - mysql-locker-data:/var/lib/mysql
+    networks:
+      - aeis-net
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_LOCKER_ROOT_PASSWORD}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  mysql-rental:
+    image: mysql:8.4
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_RENTAL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_RENTAL_DATABASE}
+      MYSQL_USER: ${MYSQL_RENTAL_USER}
+      MYSQL_PASSWORD: ${MYSQL_RENTAL_PASSWORD}
+    volumes:
+      - mysql-rental-data:/var/lib/mysql
+    networks:
+      - aeis-net
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_RENTAL_ROOT_PASSWORD}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  mongo-help:
+    image: mongo:7
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_HELP_ROOT_USER}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_HELP_ROOT_PASSWORD}
+      MONGO_INITDB_DATABASE: ${MONGO_HELP_DATABASE}
+    volumes:
+      - mongo-help-data:/data/db
+    networks:
+      - aeis-net
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping')"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  # Los siguientes servicios se agregan en fases posteriores del PLAN.md:
+  # api-gateway, auth-service, locker-service, rental-service, help-service,
+  # frontend, prometheus, grafana, loki, promtail.
