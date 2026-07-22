@@ -1,0 +1,71 @@
+server:
+  port: ${SERVER_PORT:8080}
+
+spring:
+  application:
+    name: api-gateway
+  cloud:
+    gateway:
+      routes:
+        - id: auth-service
+          uri: ${AUTH_SERVICE_URL:http://auth-service:8081}
+          predicates:
+            - Path=/api/auth/**
+          filters:
+            - RewritePath=/api/(?<segment>.*), /$\{segment}
+        - id: users-service
+          uri: ${AUTH_SERVICE_URL:http://auth-service:8081}
+          predicates:
+            - Path=/api/users/**
+          filters:
+            - RewritePath=/api/(?<segment>.*), /$\{segment}
+        - id: locker-service
+          uri: ${LOCKER_SERVICE_URL:http://locker-service:8082}
+          predicates:
+            - Path=/api/lockers/**,/api/locker-blocks/**
+          filters:
+            - RewritePath=/api/(?<segment>.*), /$\{segment}
+        - id: rental-service
+          uri: ${RENTAL_SERVICE_URL:http://rental-service:8083}
+          predicates:
+            - Path=/api/periods/**,/api/rentals/**,/api/excel/**,/api/payments/**
+          filters:
+            - RewritePath=/api/(?<segment>.*), /$\{segment}
+        - id: help-service
+          uri: ${HELP_SERVICE_URL:http://help-service:8084}
+          predicates:
+            - Path=/api/help/**
+          filters:
+            - RewritePath=/api/(?<segment>.*), /$\{segment}
+            - name: CircuitBreaker
+              args:
+                name: helpCB
+                fallbackUri: forward:/fallback/help
+        - id: help-service-ws
+          uri: ${HELP_SERVICE_WS_URL:ws://help-service:8084}
+          predicates:
+            - Path=/ws/**
+
+jwt:
+  secret: ${JWT_SECRET:devsecretdevsecretdevsecretdevsecret}
+
+cors:
+  allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173,http://localhost:80}
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      helpCB:
+        sliding-window-size: 10
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 10s
+  timelimiter:
+    instances:
+      helpCB:
+        timeout-duration: 4s
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus

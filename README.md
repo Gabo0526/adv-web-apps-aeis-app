@@ -19,6 +19,14 @@ forgot/reset password, endpoints admin (`/users`, `/users/search`) e interno
 (`/internal/users/{username}`), seed de roles + usuario admin, `SecurityConfig`
 stateless, tests portados del monolito con H2.
 
+✅ **Fase 3 — api-gateway.** Spring Cloud Gateway con rutas `/api/**` → servicios
+(`RewritePath` para quitar el prefijo `/api`), filtro global JWT (`GlobalFilter`)
+que valida el token con `jjwt` contra `JWT_SECRET`, agrega los headers
+`X-User-Id`/`X-Username`/`X-User-Roles` y siempre elimina esos mismos headers si
+vienen del cliente (anti-spoofing), autorización gruesa por rol ADMIN en rutas
+admin/escritura, CORS global configurable y Circuit Breaker (Resilience4j) en la
+ruta de help-service con fallback amable en `/fallback/help`.
+
 El resto de servicios se implementa en las fases siguientes del `PLAN.md` (§12).
 
 ## Estructura del repositorio
@@ -119,5 +127,43 @@ Tests con H2 (no requieren Docker):
 
 ```bash
 cd backend/auth-service
+mvn test
+```
+
+## api-gateway (fase 3)
+
+Enruta `/api/**` a los microservicios (por ahora solo auth-service está
+dockerizado; el resto se agrega en fases posteriores) y valida el JWT emitido
+por auth-service en cada petición protegida.
+
+1. Levantar `mysql-auth`, `auth-service` y `api-gateway`:
+
+   ```bash
+   docker compose up -d --build mysql-auth auth-service api-gateway
+   ```
+
+2. Probar el flujo (login vía gateway, ruta protegida sin/con token):
+
+   ```bash
+   TOKEN=$(curl -s -X POST http://localhost:8080/api/auth/login \
+     -H "Content-Type: application/json" \
+     -d '{"username":"admin","password":"'"$ADMIN_DEFAULT_PASSWORD"'"}' \
+     | python3 -c "import sys,json;print(json.load(sys.stdin)['token'])")
+
+   # Sin token -> 401
+   curl -i "http://localhost:8080/api/users?page=0&size=5"
+
+   # Con token -> 200, y el header X-User-Roles llega al servicio (visible en la respuesta paginada)
+   curl -i "http://localhost:8080/api/users?page=0&size=5" -H "Authorization: Bearer $TOKEN"
+   ```
+
+3. Con `help-service` todavía sin implementar (fase 8), la ruta `/api/help/**`
+   demuestra el Circuit Breaker: cualquier request autenticado devuelve 503 con
+   el mensaje de fallback en vez de colgarse.
+
+Tests unitarios (reglas de autorización + validación de JWT, no requieren Docker):
+
+```bash
+cd backend/api-gateway
 mvn test
 ```

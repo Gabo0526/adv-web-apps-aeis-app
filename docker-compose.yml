@@ -109,6 +109,19 @@ services:
       mysql-auth:
         condition: service_healthy
 
+  api-gateway:
+    build: backend/api-gateway
+    environment:
+      JWT_SECRET: ${JWT_SECRET}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS}
+      AUTH_SERVICE_URL: http://auth-service:8081
+    ports:
+      - "8080:8080"
+    networks:
+      - aeis-net
+    depends_on:
+      - auth-service
+
   # Los siguientes servicios se agregan en fases posteriores del PLAN.md:
-  # api-gateway, locker-service, rental-service, help-service,
+  # locker-service, rental-service, help-service,
   # frontend, prometheus, grafana, loki, promtail.
