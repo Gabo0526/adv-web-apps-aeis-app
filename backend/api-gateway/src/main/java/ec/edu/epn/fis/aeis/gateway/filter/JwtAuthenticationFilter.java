@@ -111,7 +111,7 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
         if (header != null && header.startsWith("Bearer ")) {
             return header.substring("Bearer ".length());
         }
-        if (path.startsWith("/ws/")) {
+        if (path.equals("/ws") || path.startsWith("/ws/")) {
             return request.getQueryParams().getFirst("token");
         }
         return null;
