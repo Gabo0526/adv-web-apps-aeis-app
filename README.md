@@ -1,79 +1,82 @@
 # AEIS — Sistema de Alquiler de Casilleros (Microservicios)
 
+[![CI](https://github.com/Gabo0526/adv-web-apps-aeis-app/actions/workflows/ci.yml/badge.svg)](https://github.com/Gabo0526/adv-web-apps-aeis-app/actions/workflows/ci.yml)
+
 Migración del monolito de referencia (`../monolithic-aeis-app`) a una arquitectura de
 microservicios: API Gateway + Circuit Breaker, JWT, 4 microservicios Spring Boot
 (auth, locker, rental, help) con base de datos propia cada uno, frontend React,
 y monitoreo con Prometheus/Grafana/Loki.
 
-La especificación completa del proyecto está en [`PLAN.md`](PLAN.md). Este README se
-irá completando en la fase 11 (pulido y materiales de presentación) con diagramas y
-guion de demo.
+La especificación completa del proyecto está en [`PLAN.md`](PLAN.md).
 
 ## Estado actual
 
-✅ **Fase 1 — Scaffolding.** Estructura de carpetas y las 4 bases de datos vía Docker
-Compose.
+✅ **Fases 1–9** — Scaffolding, los 4 microservicios backend + api-gateway, el
+frontend React (auth/core + admin + ayuda con chat STOMP) y el stack de
+monitoreo (Prometheus + Grafana + Loki/Promtail), todo corriendo en
+Docker Compose.
 
-✅ **Fase 2 — auth-service.** Registro con verificación por email, login con JWT,
-forgot/reset password, endpoints admin (`/users`, `/users/search`) e interno
-(`/internal/users/{username}`), seed de roles + usuario admin, `SecurityConfig`
-stateless, tests portados del monolito con H2.
+✅ **Fase 10 — CI/CD y dockerización total.** `frontend/Dockerfile` multi-stage
+(`node:20-alpine` → `nginx:alpine` con fallback SPA), servicio `frontend`
+agregado al compose (`5173:80`), healthchecks + `depends_on: condition:
+service_healthy` en cascada para los 5 servicios backend, workflows de GitHub
+Actions (`ci.yml` con matrix de build+test backend/frontend, `cd.yml` con
+build y push de las 6 imágenes a GHCR en cada push a `main`).
 
-✅ **Fase 3 — api-gateway.** Spring Cloud Gateway con rutas `/api/**` → servicios
-(`RewritePath` para quitar el prefijo `/api`), filtro global JWT (`GlobalFilter`)
-que valida el token con `jjwt` contra `JWT_SECRET`, agrega los headers
-`X-User-Id`/`X-Username`/`X-User-Roles` y siempre elimina esos mismos headers si
-vienen del cliente (anti-spoofing), autorización gruesa por rol ADMIN en rutas
-admin/escritura, CORS global configurable y Circuit Breaker (Resilience4j) en la
-ruta de help-service con fallback amable en `/fallback/help`.
+Pendiente: **fase 11** (pulido, diagramas comparativos y guion de demo — ver
+`PLAN.md` §12).
 
-El resto de servicios se implementa en las fases siguientes del `PLAN.md` (§12).
-
-## Estructura del repositorio
+## Arquitectura y URLs
 
 ```
-adv-web-apps-aeis-app/
-├── .github/workflows/     # CI/CD (fase 10)
-├── backend/
-│   ├── api-gateway/        # fase 3
-│   ├── auth-service/       # fase 2
-│   ├── locker-service/     # fase 4
-│   ├── rental-service/     # fase 5
-│   └── help-service/       # fase 8
-├── frontend/               # fases 6-7
-├── monitoring/             # fase 9
-├── docker-compose.yml
-├── .env.example
-└── PLAN.md
+Navegador ──► frontend (nginx :80 → host 5173)
+Navegador ──► api-gateway :8080 ──► auth-service / locker-service / rental-service / help-service
+Prometheus :9090 scrapea /actuator/prometheus de los 5 servicios backend
+Grafana :3000 (datasources: Prometheus + Loki) · Loki :3100 · Promtail (logs Docker)
 ```
+
+| Servicio | URL | Notas |
+|---|---|---|
+| Frontend | http://localhost:5173 | React servido por nginx |
+| API Gateway | http://localhost:8080 | Rutas `/api/**`, WebSocket `/ws/**` |
+| Grafana | http://localhost:3000 | usuario/clave: `admin`/`admin` (o los de `.env`) |
+| Prometheus | http://localhost:9090 | |
+
+Los servicios backend `auth-service` (8081), `locker-service` (8082),
+`rental-service` (8083) y `help-service` (8084) **no publican puerto al host**:
+solo son alcanzables desde dentro de la red Docker `aeis-net`, a través del
+gateway (defensa en profundidad, ver `PLAN.md` §9).
 
 ## Requisitos
 
 - Docker y Docker Compose
-- (Fases posteriores) Java 17, Maven, Node.js 20
+- (Solo si se quiere correr algún servicio fuera de Docker) Java 17, Maven, Node.js 20
 
-## Arranque (fase 1)
+## Arranque desde cero
 
-1. Copiar la plantilla de variables de entorno y completar los valores:
+1. Copiar la plantilla de variables de entorno y completar los valores reales
+   (JWT secret, credenciales de BD, SMTP, Payphone, etc.):
 
    ```bash
    cp .env.example .env
    ```
 
-2. Levantar las bases de datos:
+2. Levantar todo el sistema (build de las 5 imágenes backend + frontend, y
+   arranque de BDs/monitoreo):
 
    ```bash
-   docker compose up -d
+   docker compose up -d --build
    ```
 
-3. Verificar que las 4 bases de datos estén sanas:
+3. Verificar que todos los servicios queden `healthy`:
 
    ```bash
    docker compose ps
    ```
 
-   Las 4 deben mostrar estado `healthy`: `mysql-auth`, `mysql-locker`,
-   `mysql-rental`, `mongo-help`.
+4. Abrir el frontend en **http://localhost:5173** (servido por nginx, no por
+   `npm run dev`) e iniciar sesión con el usuario admin sembrado
+   (`admin` / `ADMIN_DEFAULT_PASSWORD` de tu `.env`).
 
 Para detener y limpiar los volúmenes:
 
@@ -81,12 +84,64 @@ Para detener y limpiar los volúmenes:
 docker compose down -v
 ```
 
-## auth-service (fase 2)
+## Puertos de desarrollo expuestos por las bases de datos
 
-`mysql-auth` publica el puerto `3307` del host (mapeado a `3306` del contenedor)
-para poder correr `auth-service` localmente con `mvn spring-boot:run` mientras se
-desarrolla. Cuando el servicio quede dockerizado y enrutado por el gateway
-(fases 3/10), ese mapeo puede volver a quedar interno.
+Las bases de datos publican un puerto al host **únicamente para poder
+inspeccionarlas o correr un servicio backend fuera de Docker** durante
+desarrollo (`mvn spring-boot:run`, un cliente MySQL/Mongo local, etc.). No son
+necesarios para que el sistema funcione vía `docker compose up`, y podrían
+volver a quedar internos sin afectar al resto del stack:
+
+| Base de datos | Puerto host → contenedor | Uso |
+|---|---|---|
+| mysql-auth | 3307 → 3306 | `authdb`, inspección / `auth-service` local |
+| mysql-locker | 3308 → 3306 | `lockerdb`, inspección / `locker-service` local |
+| mysql-rental | 3310 → 3306 | `rentaldb`, inspección / `rental-service` local |
+| mongo-help | 27017 → 27017 | `helpdb`, inspección / `help-service` local |
+
+## Imágenes en GHCR
+
+En cada push a `main`, `cd.yml` publica las 6 imágenes (tags `latest` y el SHA
+del commit):
+
+```
+ghcr.io/gabo0526/adv-web-apps-aeis-app-api-gateway
+ghcr.io/gabo0526/adv-web-apps-aeis-app-auth-service
+ghcr.io/gabo0526/adv-web-apps-aeis-app-locker-service
+ghcr.io/gabo0526/adv-web-apps-aeis-app-rental-service
+ghcr.io/gabo0526/adv-web-apps-aeis-app-help-service
+ghcr.io/gabo0526/adv-web-apps-aeis-app-frontend
+```
+
+## Estructura del repositorio
+
+```
+adv-web-apps-aeis-app/
+├── .github/workflows/     # ci.yml (fase 10) + cd.yml (fase 10)
+├── backend/
+│   ├── api-gateway/        # fase 3
+│   ├── auth-service/       # fase 2
+│   ├── locker-service/     # fase 4
+│   ├── rental-service/     # fase 5
+│   └── help-service/       # fase 8
+├── frontend/               # fases 6-7-10 (Dockerfile)
+├── monitoring/             # fase 9
+├── docker-compose.yml
+├── .env.example
+└── PLAN.md
+```
+
+## Desarrollo de servicios individuales
+
+Las siguientes secciones documentan cómo levantar un servicio puntual fuera de
+Docker (útil durante desarrollo activo de ese servicio). Para una demo
+completa, usar `docker compose up -d --build` como se indica arriba.
+
+### auth-service
+
+`mysql-auth` publica el puerto `3307` del host (mapeado a `3306` del
+contenedor) para poder correr `auth-service` localmente con
+`mvn spring-boot:run` mientras se desarrolla.
 
 1. Levantar `mysql-auth`:
 
@@ -130,11 +185,10 @@ cd backend/auth-service
 mvn test
 ```
 
-## api-gateway (fase 3)
+### api-gateway
 
-Enruta `/api/**` a los microservicios (por ahora solo auth-service está
-dockerizado; el resto se agrega en fases posteriores) y valida el JWT emitido
-por auth-service en cada petición protegida.
+Enruta `/api/**` a los microservicios y valida el JWT emitido por
+auth-service en cada petición protegida.
 
 1. Levantar `mysql-auth`, `auth-service` y `api-gateway`:
 
@@ -157,9 +211,9 @@ por auth-service en cada petición protegida.
    curl -i "http://localhost:8080/api/users?page=0&size=5" -H "Authorization: Bearer $TOKEN"
    ```
 
-3. Con `help-service` todavía sin implementar (fase 8), la ruta `/api/help/**`
-   demuestra el Circuit Breaker: cualquier request autenticado devuelve 503 con
-   el mensaje de fallback en vez de colgarse.
+3. Con `help-service` caído (`docker stop aeis-help-service-1`), la ruta
+   `/api/help/**` demuestra el Circuit Breaker: cualquier request autenticado
+   devuelve 503 con el mensaje de fallback en vez de colgarse.
 
 Tests unitarios (reglas de autorización + validación de JWT, no requieren Docker):
 

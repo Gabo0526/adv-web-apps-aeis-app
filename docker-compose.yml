@@ -123,6 +123,12 @@ services:
     depends_on:
       mysql-auth:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8081/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 40s
 
   locker-service:
     build: backend/locker-service
@@ -135,6 +141,12 @@ services:
     depends_on:
       mysql-locker:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8082/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 40s
 
   rental-service:
     build: backend/rental-service
@@ -152,9 +164,15 @@ services:
       mysql-rental:
         condition: service_healthy
       locker-service:
-        condition: service_started
+        condition: service_healthy
       auth-service:
-        condition: service_started
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8083/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 40s
 
   help-service:
     build: backend/help-service
@@ -166,6 +184,12 @@ services:
     depends_on:
       mongo-help:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8084/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 40s
 
   api-gateway:
     build: backend/api-gateway
@@ -182,10 +206,34 @@ services:
     networks:
       - aeis-net
     depends_on:
-      - auth-service
-      - locker-service
-      - rental-service
-      - help-service
+      auth-service:
+        condition: service_healthy
+      locker-service:
+        condition: service_healthy
+      rental-service:
+        condition: service_healthy
+      help-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 40s
+
+  frontend:
+    build:
+      context: frontend
+      args:
+        VITE_API_URL: ${VITE_API_URL}
+        VITE_WS_URL: ${VITE_WS_URL}
+    ports:
+      - "5173:80"
+    networks:
+      - aeis-net
+    depends_on:
+      api-gateway:
+        condition: service_healthy
 
   prometheus:
     image: prom/prometheus:latest
@@ -241,5 +289,3 @@ services:
       - aeis-net
     depends_on:
       - loki
-
-  # El servicio frontend se agrega en la fase 10 del PLAN.md.
