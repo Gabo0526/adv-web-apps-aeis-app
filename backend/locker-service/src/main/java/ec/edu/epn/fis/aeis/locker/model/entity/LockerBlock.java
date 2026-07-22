@@ -7,6 +7,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.OrderBy;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -48,6 +49,7 @@ public class LockerBlock {
     private Long periodId;
 
     @OneToMany(mappedBy = "lockerBlock", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("number ASC")
     private List<Locker> lockers;
 
     @Column(nullable = false)
