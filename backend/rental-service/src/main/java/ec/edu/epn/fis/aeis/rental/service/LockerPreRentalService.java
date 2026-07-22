@@ -73,7 +73,9 @@ public class LockerPreRentalService {
             BigDecimal amountToPay;
             if (customEndDateProvided) {
                 rentalValidator.validateRentalDates(start, endDate);
-                end = endDate;
+                // El cobro incluye el día de fin completo, así que la renta vence al
+                // terminar ese día (si no, se pagaría un día que el scheduler quita).
+                end = endDate.toLocalDate().atTime(23, 59, 59);
                 amountToPay = rentalCalculator.calculateCustomRentalAmount(start, end);
             } else {
                 end = activePeriod.getEndDate();

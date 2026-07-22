@@ -6,6 +6,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 
@@ -42,7 +43,9 @@ public class LockerRentalDTO {
         this.endDate = rental.getEndDate();
 
         if (rental.getEndDate() != null) {
-            long diff = ChronoUnit.DAYS.between(LocalDateTime.now(), rental.getEndDate());
+            // Días de calendario, no bloques de 24h: una renta que vence mañana
+            // muestra "1" sin importar la hora actual.
+            long diff = ChronoUnit.DAYS.between(LocalDate.now(), rental.getEndDate().toLocalDate());
             this.remainingDays = Math.max(diff, 0);
         } else {
             this.remainingDays = -1;

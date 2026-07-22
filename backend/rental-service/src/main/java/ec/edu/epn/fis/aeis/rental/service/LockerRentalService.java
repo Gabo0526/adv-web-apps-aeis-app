@@ -51,7 +51,8 @@ public class LockerRentalService {
             LocalDateTime endDate;
             if (customEndDateProvided) {
                 rentalValidator.validateRentalDates(startDate, request.getEndDate());
-                endDate = request.getEndDate();
+                // Igual que en el flujo normal: la renta vence al terminar el día de fin.
+                endDate = request.getEndDate().toLocalDate().atTime(23, 59, 59);
             } else {
                 endDate = activePeriod.getEndDate();
             }
