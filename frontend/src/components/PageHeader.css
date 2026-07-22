@@ -1,0 +1,19 @@
+.page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.75rem;
+}
+
+.page-header__title {
+  margin: 0;
+  font-size: 1.7rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.page-header__subtitle {
+  margin: 0.3rem 0 0;
+  color: var(--text-muted);
+}
