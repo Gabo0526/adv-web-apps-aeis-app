@@ -11,9 +11,15 @@ guion de demo.
 
 ## Estado actual
 
-🚧 **Fase 1 — Scaffolding.** Solo existe la estructura de carpetas y las 4 bases de
-datos vía Docker Compose. El resto de servicios se implementa en las fases
-siguientes del `PLAN.md` (§12).
+✅ **Fase 1 — Scaffolding.** Estructura de carpetas y las 4 bases de datos vía Docker
+Compose.
+
+✅ **Fase 2 — auth-service.** Registro con verificación por email, login con JWT,
+forgot/reset password, endpoints admin (`/users`, `/users/search`) e interno
+(`/internal/users/{username}`), seed de roles + usuario admin, `SecurityConfig`
+stateless, tests portados del monolito con H2.
+
+El resto de servicios se implementa en las fases siguientes del `PLAN.md` (§12).
 
 ## Estructura del repositorio
 
@@ -65,4 +71,53 @@ Para detener y limpiar los volúmenes:
 
 ```bash
 docker compose down -v
+```
+
+## auth-service (fase 2)
+
+`mysql-auth` publica el puerto `3307` del host (mapeado a `3306` del contenedor)
+para poder correr `auth-service` localmente con `mvn spring-boot:run` mientras se
+desarrolla. Cuando el servicio quede dockerizado y enrutado por el gateway
+(fases 3/10), ese mapeo puede volver a quedar interno.
+
+1. Levantar `mysql-auth`:
+
+   ```bash
+   docker compose up -d mysql-auth
+   ```
+
+2. Exportar las variables de `.env` y correr el servicio (usa los defaults de
+   `application.properties`, que ya apuntan a `localhost:3307`):
+
+   ```bash
+   cd backend/auth-service
+   set -a && source ../../.env && set +a
+   mvn spring-boot:run
+   ```
+
+   > Nota: `source .env` en bash rompe valores con espacios sin comillas (como
+   > `SPRING_MAIL_PASSWORD`). Si el correo falla con `535 Authentication failed`,
+   > exportar las variables línea por línea en vez de `source .env` directo.
+
+3. Probar el flujo (registro → verificación → login → JWT; reset de contraseña):
+
+   ```bash
+   curl -X POST http://localhost:8081/auth/register -H "Content-Type: application/json" \
+     -d '{"id":"1712345678","username":"jperez","name":"Juan","lastName":"Perez","uniqueCode":"201512345","email":"tu-correo@example.com","password":"password123","college":"FIS"}'
+
+   # El link de verificación llega al correo; o se puede leer el token desde la BD:
+   docker exec aeis-mysql-auth-1 mysql -uauth_user -pauthpass authdb -N -B \
+     -e "SELECT token FROM verification_token WHERE user_id='1712345678';"
+
+   curl "http://localhost:8081/auth/verify?token=<TOKEN>"
+
+   curl -X POST http://localhost:8081/auth/login -H "Content-Type: application/json" \
+     -d '{"username":"jperez","password":"password123"}'
+   ```
+
+Tests con H2 (no requieren Docker):
+
+```bash
+cd backend/auth-service
+mvn test
 ```

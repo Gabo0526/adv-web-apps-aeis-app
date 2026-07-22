@@ -18,6 +18,12 @@ services:
       MYSQL_DATABASE: ${MYSQL_AUTH_DATABASE}
       MYSQL_USER: ${MYSQL_AUTH_USER}
       MYSQL_PASSWORD: ${MYSQL_AUTH_PASSWORD}
+    ports:
+      # Publicado solo para desarrollo local (correr auth-service con `mvn spring-boot:run`
+      # fuera de Docker). Puerto host 3307 (no 3306) para no chocar con un MySQL local.
+      # Cuando auth-service quede dockerizado y conectado por el gateway (fases 3/10),
+      # puede volver a quedar interno.
+      - "3307:3306"
     volumes:
       - mysql-auth-data:/var/lib/mysql
     networks:
@@ -82,6 +88,27 @@ services:
       retries: 10
       start_period: 20s
 
+  auth-service:
+    build: backend/auth-service
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql-auth:3306/${MYSQL_AUTH_DATABASE}
+      SPRING_DATASOURCE_USERNAME: ${MYSQL_AUTH_USER}
+      SPRING_DATASOURCE_PASSWORD: ${MYSQL_AUTH_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+      FRONTEND_URL: ${FRONTEND_URL}
+      ADMIN_DEFAULT_PASSWORD: ${ADMIN_DEFAULT_PASSWORD}
+      SPRING_MAIL_HOST: ${SPRING_MAIL_HOST}
+      SPRING_MAIL_PORT: ${SPRING_MAIL_PORT}
+      SPRING_MAIL_USERNAME: ${SPRING_MAIL_USERNAME}
+      SPRING_MAIL_PASSWORD: ${SPRING_MAIL_PASSWORD}
+      SPRING_MAIL_SMTP_AUTH: ${SPRING_MAIL_SMTP_AUTH}
+      SPRING_MAIL_SMTP_STARTTLS_ENABLE: ${SPRING_MAIL_SMTP_STARTTLS_ENABLE}
+    networks:
+      - aeis-net
+    depends_on:
+      mysql-auth:
+        condition: service_healthy
+
   # Los siguientes servicios se agregan en fases posteriores del PLAN.md:
-  # api-gateway, auth-service, locker-service, rental-service, help-service,
+  # api-gateway, locker-service, rental-service, help-service,
   # frontend, prometheus, grafana, loki, promtail.
