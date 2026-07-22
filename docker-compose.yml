@@ -64,6 +64,10 @@ services:
       MYSQL_DATABASE: ${MYSQL_RENTAL_DATABASE}
       MYSQL_USER: ${MYSQL_RENTAL_USER}
       MYSQL_PASSWORD: ${MYSQL_RENTAL_PASSWORD}
+    ports:
+      # Publicado solo para desarrollo local (correr rental-service con `mvn spring-boot:run`
+      # fuera de Docker), igual que mysql-auth:3307 / mysql-locker:3308.
+      - "3310:3306"
     volumes:
       - mysql-rental-data:/var/lib/mysql
     networks:
@@ -125,6 +129,26 @@ services:
       mysql-locker:
         condition: service_healthy
 
+  rental-service:
+    build: backend/rental-service
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql-rental:3306/${MYSQL_RENTAL_DATABASE}
+      SPRING_DATASOURCE_USERNAME: ${MYSQL_RENTAL_USER}
+      SPRING_DATASOURCE_PASSWORD: ${MYSQL_RENTAL_PASSWORD}
+      LOCKER_SERVICE_URL: http://locker-service:8082
+      AUTH_SERVICE_URL: http://auth-service:8081
+      PAYPHONE_TOKEN: ${PAYPHONE_TOKEN}
+      PAYPHONE_STORE_ID: ${PAYPHONE_STORE_ID}
+    networks:
+      - aeis-net
+    depends_on:
+      mysql-rental:
+        condition: service_healthy
+      locker-service:
+        condition: service_started
+      auth-service:
+        condition: service_started
+
   api-gateway:
     build: backend/api-gateway
     environment:
@@ -132,6 +156,7 @@ services:
       CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS}
       AUTH_SERVICE_URL: http://auth-service:8081
       LOCKER_SERVICE_URL: http://locker-service:8082
+      RENTAL_SERVICE_URL: http://rental-service:8083
     ports:
       - "8080:8080"
     networks:
@@ -139,7 +164,8 @@ services:
     depends_on:
       - auth-service
       - locker-service
+      - rental-service
 
   # Los siguientes servicios se agregan en fases posteriores del PLAN.md:
-  # rental-service, help-service,
+  # help-service,
   # frontend, prometheus, grafana, loki, promtail.
