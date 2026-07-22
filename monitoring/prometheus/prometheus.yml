@@ -1,0 +1,17 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: spring-services
+    metrics_path: /actuator/prometheus
+    scrape_interval: 15s
+    static_configs:
+      - targets:
+          - api-gateway:8080
+          - auth-service:8081
+          - locker-service:8082
+          - rental-service:8083
+          - help-service:8084
+        labels:
+          group: aeis-backend

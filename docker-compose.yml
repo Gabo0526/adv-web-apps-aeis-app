@@ -9,6 +9,9 @@ volumes:
   mysql-locker-data:
   mysql-rental-data:
   mongo-help-data:
+  prometheus-data:
+  grafana-data:
+  loki-data:
 
 services:
   mysql-auth:
@@ -184,5 +187,59 @@ services:
       - rental-service
       - help-service
 
-  # Los siguientes servicios se agregan en fases posteriores del PLAN.md:
-  # frontend, prometheus, grafana, loki, promtail.
+  prometheus:
+    image: prom/prometheus:latest
+    volumes:
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    ports:
+      - "9090:9090"
+    networks:
+      - aeis-net
+    depends_on:
+      - auth-service
+      - locker-service
+      - rental-service
+      - help-service
+      - api-gateway
+
+  grafana:
+    image: grafana/grafana:latest
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD}
+    volumes:
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - grafana-data:/var/lib/grafana
+    ports:
+      - "3000:3000"
+    networks:
+      - aeis-net
+    depends_on:
+      - prometheus
+      - loki
+
+  loki:
+    image: grafana/loki:latest
+    command: -config.file=/etc/loki/loki-config.yml
+    volumes:
+      - ./monitoring/loki/loki-config.yml:/etc/loki/loki-config.yml:ro
+      - loki-data:/loki
+    ports:
+      - "3100:3100"
+    networks:
+      - aeis-net
+
+  promtail:
+    image: grafana/promtail:latest
+    command: -config.file=/etc/promtail/promtail-config.yml
+    volumes:
+      - ./monitoring/promtail/promtail-config.yml:/etc/promtail/promtail-config.yml:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - aeis-net
+    depends_on:
+      - loki
+
+  # El servicio frontend se agrega en la fase 10 del PLAN.md.
