@@ -324,6 +324,51 @@ En `PayphoneCheckout.jsx`: cargar dinámicamente `https://cdn.payphonetodoesposi
 
 `Dockerfile` multi-stage: `node:20-alpine` (npm ci && npm run build) → `nginx:alpine` sirviendo `dist/` con fallback SPA (`try_files $uri /index.html`). Variables `VITE_API_URL` (`http://localhost:8080/api`) y `VITE_WS_URL` se inyectan en build (build-args en compose).
 
+### 8.7 Guía visual (OBLIGATORIA — replica el estilo del monolito)
+
+El frontend nuevo debe verse como una evolución del monolito, no como otra app. Referencias visuales para copiar el estilo: `../monolithic-aeis-app/src/main/resources/static/css/login.css` (tokens y login) y `templates/home.html`, `templates/locker-view.html` (navbar, tarjetas, grilla).
+
+**Tokens globales** (crear `frontend/src/styles/theme.css`, importado en `main.jsx`; usar SIEMPRE las variables, nunca hex sueltos):
+
+```css
+:root {
+  --primary-color: #2563eb;  --primary-dark: #1d4ed8;
+  --success-color: #16a34a;  --danger-color: #dc2626;
+  --warning-color: #ca8a04;  --info-color: #0891b2;
+  --bg-light: #f8fafc;       --border-color: #e2e8f0;
+  --text-main: #374151;      --text-muted: #6b7280;
+  --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1);
+  --gradient-bg: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: var(--text-main); }
+```
+
+**Reglas por tipo de pantalla:**
+- **Pantallas de auth** (login, register, forgot/reset, verify, checkout y result de pago): fondo `--gradient-bg` a pantalla completa, tarjeta blanca centrada (`border-radius: 20px`, `--shadow-xl`, padding 3rem, max-width 450–600px), título con ícono, botón primario ancho completo con gradiente azul (`linear-gradient(135deg, var(--primary-color), var(--primary-dark))`) que se eleva al hover (`translateY(-2px)` + sombra).
+- **Pantallas internas** (home, lockers, admin, ayuda): fondo `--bg-light`, **navbar blanca superior fija** con logo "AEIS" a la izquierda (ícono `fa-archive` + texto), links con ícono al centro/derecha (Inicio, Casilleros, Mis Alquileres, Ayuda; + Períodos, Rentas, Usuarios si es ADMIN) y botón de logout; link activo en `--primary-color` con subrayado grueso. Contenido en tarjetas blancas (`border-radius: 12–16px`, `--shadow`, padding 1.5–2rem) sobre el fondo claro, con encabezado de página (título + subtítulo `--text-muted`).
+- **Grilla de casilleros**: por cada bloque una tarjeta con su nombre y una cuadrícula CSS Grid de `blockColumns` columnas; cada casillero es una celda cuadrada redondeada con el número centrado, coloreada por estado: AVAILABLE verde (`--success-color`, clickeable, hover se eleva), OCCUPIED rojo (`--danger-color`), PENDING amarillo (`--warning-color`), UNDER_MAINTENANCE gris (`#9ca3af`). Leyenda de colores arriba de la grilla. Click en AVAILABLE abre el modal de renta.
+- **Tablas admin**: dentro de tarjeta blanca, cabecera con fondo `--bg-light`, filas con hover, chips de estado con los mismos colores de la grilla, paginación con botones redondeados.
+- **Formularios**: labels arriba, inputs con borde `--border-color` y `border-radius: 8px`, focus con borde `--primary-color`; error de validación en texto `--danger-color` pequeño bajo el campo. Botones secundarios blancos con borde; peligro en `--danger-color`.
+- **Chat de ayuda**: burbujas redondeadas — usuario a la derecha en `--primary-color` con texto blanco, contraparte a la izquierda en `--bg-light`; input fijo abajo con botón de enviar (`fa-paper-plane`).
+- **Íconos**: Font Awesome 6 vía CDN en `index.html` (igual que el monolito). **Feedback**: spinners `fa-spinner fa-spin` durante cargas y mensajes de éxito/error en banners redondeados (verde/rojo suaves: fondos `#f0fdf4`/`#fef2f2`).
+
+### 8.8 Estándares de código frontend (OBLIGATORIOS)
+
+El monolito tenía un frontend caótico (HTML de 1700 líneas con CSS/JS inline). El frontend nuevo se construye "con todas las de ley". Reglas no negociables:
+
+1. **Capa de API única**: `api/client.js` exporta la instancia axios (baseURL `VITE_API_URL`, interceptor request que agrega `Authorization: Bearer` si hay token, interceptor response que ante 401 hace logout y redirige a /login). Sobre ella, un módulo por servicio: `api/authApi.js`, `api/lockersApi.js`, `api/rentalsApi.js`, `api/helpApi.js` con funciones nombradas (`login(credentials)`, `getLockerBlocks()`, …). **Prohibido** usar axios/fetch directamente en componentes.
+2. **AuthContext único** (`auth/AuthContext.jsx`): guarda token + usuario (claims decodificados: username, name, roles) en estado y localStorage; expone `login()`, `logout()`, `isAdmin`. Hook `useAuth()`. Nadie más lee/escribe localStorage.
+3. **Rutas centralizadas** en `App.jsx`, con constantes de paths en `routes.js` y wrappers `ProtectedRoute` / `AdminRoute` (redirigen a /login o /home). Prohibido hardcodear paths en los componentes: importar de `routes.js`.
+4. **Carga de datos con hooks**: patrón `{data, loading, error}` mediante hooks por feature (`useLockerBlocks()`, `useMyRentals()`, …) construidos sobre un `useFetch` genérico. Prohibido repetir `useEffect` + estados de carga a mano en cada pantalla. Toda pantalla muestra spinner en loading y Banner de error en error — nunca pantalla en blanco ni `alert()`.
+5. **Componentes reutilizables** en `components/`: `FormField` (label + input + mensaje de error), `Button` (variantes primary/secondary/danger, estado loading), `Card`, `Modal`, `Spinner`, `Banner` (success/error), `StatusChip` (colores según §8.7), `PageHeader`, `DataTable` (columnas + paginación). Los formularios y tablas de TODAS las pantallas se arman con estos componentes; prohibido duplicar su markup.
+6. **Validación centralizada**: `utils/validators.js` con funciones puras (cédula 10 dígitos, uniqueCode 9, username, email, password≥8, rangos de fechas ≤15 días, montos) + hook ligero `useForm` (values, errors, touched, handleSubmit) que las aplica según §8.3. Prohibido validar inline distinto en cada formulario.
+7. **Constantes de dominio** en `utils/constants.js`: enums LockerStatus/RentalStatus/PreRentalStatus/College con su label en español y su color (→ `StatusChip` y leyenda de la grilla). Prohibido comparar contra strings mágicos regados por el código.
+8. **CSS ordenado**: `styles/theme.css` (tokens §8.7 + estilos base) y un `.css` por componente/página con clases prefijadas por el componente (`.locker-grid__cell`). Estilos inline SOLO para valores dinámicos (p. ej. `gridTemplateColumns` según `blockColumns`, color según estado).
+9. **Estado global**: solo Context (auth). Nada de Redux/Zustand/react-query — innecesario a esta escala.
+10. **Higiene**: componentes PascalCase en `.jsx`, hooks `useX`, componentes de máximo ~200 líneas (extraer subcomponentes), sin código muerto ni `console.log`, `npm run lint` (ESLint del template de Vite) sin errores, y `label` asociado a cada input (accesibilidad básica).
+
 ---
 
 ## 9. docker-compose.yml
