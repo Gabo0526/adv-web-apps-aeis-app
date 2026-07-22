@@ -14,7 +14,9 @@ import LockerGrid from './features/lockers/LockerGrid';
 import PayphoneCheckout from './features/payment/PayphoneCheckout';
 import PaymentResult from './features/payment/PaymentResult';
 import MyRentals from './features/rentals/MyRentals';
-import ComingSoon from './components/ComingSoon';
+import HelpTickets from './features/help/HelpTickets';
+import NewTicket from './features/help/NewTicket';
+import TicketChat from './features/help/TicketChat';
 import Periods from './features/admin/Periods';
 import CreateBlock from './features/admin/CreateBlock';
 import Rentals from './features/admin/Rentals';
@@ -39,7 +41,9 @@ function App() {
             <Route path={ROUTES.LOCKERS} element={<LockerGrid />} />
             <Route path={ROUTES.PAYMENT_CHECKOUT} element={<PayphoneCheckout />} />
             <Route path={ROUTES.MY_RENTALS} element={<MyRentals />} />
-            <Route path={ROUTES.HELP} element={<ComingSoon title="Ayuda" />} />
+            <Route path={ROUTES.HELP} element={<HelpTickets />} />
+            <Route path={ROUTES.HELP_NEW} element={<NewTicket />} />
+            <Route path={ROUTES.HELP_TICKET} element={<TicketChat />} />
           </Route>
 
           <Route element={<AdminRoute />}>

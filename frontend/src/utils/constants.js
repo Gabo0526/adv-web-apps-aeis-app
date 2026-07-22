@@ -19,6 +19,11 @@ export const PRE_RENTAL_STATUS = {
   COMPLETED: { label: 'Completado', color: 'var(--success-color)' },
 };
 
+export const TICKET_STATUS = {
+  OPEN: { label: 'Abierto', color: 'var(--warning-color)' },
+  CLOSED: { label: 'Cerrado', color: 'var(--text-muted)' },
+};
+
 export const COLLEGE = {
   FC: 'Facultad de Ciencias',
   FCA: 'Facultad de Ciencias Administrativas',

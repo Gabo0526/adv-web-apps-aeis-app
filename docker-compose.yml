@@ -85,6 +85,10 @@ services:
       MONGO_INITDB_ROOT_USERNAME: ${MONGO_HELP_ROOT_USER}
       MONGO_INITDB_ROOT_PASSWORD: ${MONGO_HELP_ROOT_PASSWORD}
       MONGO_INITDB_DATABASE: ${MONGO_HELP_DATABASE}
+    ports:
+      # Publicado solo para desarrollo local (correr help-service con `mvn spring-boot:run`
+      # fuera de Docker), igual que mysql-auth:3307 / mysql-locker:3308 / mysql-rental:3310.
+      - "27017:27017"
     volumes:
       - mongo-help-data:/data/db
     networks:
@@ -149,6 +153,17 @@ services:
       auth-service:
         condition: service_started
 
+  help-service:
+    build: backend/help-service
+    environment:
+      SPRING_DATA_MONGODB_URI: mongodb://${MONGO_HELP_ROOT_USER}:${MONGO_HELP_ROOT_PASSWORD}@mongo-help:27017/${MONGO_HELP_DATABASE}?authSource=admin
+      JWT_SECRET: ${JWT_SECRET}
+    networks:
+      - aeis-net
+    depends_on:
+      mongo-help:
+        condition: service_healthy
+
   api-gateway:
     build: backend/api-gateway
     environment:
@@ -157,6 +172,8 @@ services:
       AUTH_SERVICE_URL: http://auth-service:8081
       LOCKER_SERVICE_URL: http://locker-service:8082
       RENTAL_SERVICE_URL: http://rental-service:8083
+      HELP_SERVICE_URL: http://help-service:8084
+      HELP_SERVICE_WS_URL: ws://help-service:8084
     ports:
       - "8080:8080"
     networks:
@@ -165,7 +182,7 @@ services:
       - auth-service
       - locker-service
       - rental-service
+      - help-service
 
   # Los siguientes servicios se agregan en fases posteriores del PLAN.md:
-  # help-service,
   # frontend, prometheus, grafana, loki, promtail.
