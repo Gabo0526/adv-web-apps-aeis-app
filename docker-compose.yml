@@ -42,6 +42,10 @@ services:
       MYSQL_DATABASE: ${MYSQL_LOCKER_DATABASE}
       MYSQL_USER: ${MYSQL_LOCKER_USER}
       MYSQL_PASSWORD: ${MYSQL_LOCKER_PASSWORD}
+    ports:
+      # Publicado solo para desarrollo local (correr locker-service con `mvn spring-boot:run`
+      # fuera de Docker), igual que mysql-auth:3307.
+      - "3308:3306"
     volumes:
       - mysql-locker-data:/var/lib/mysql
     networks:
@@ -109,19 +113,33 @@ services:
       mysql-auth:
         condition: service_healthy
 
+  locker-service:
+    build: backend/locker-service
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql-locker:3306/${MYSQL_LOCKER_DATABASE}
+      SPRING_DATASOURCE_USERNAME: ${MYSQL_LOCKER_USER}
+      SPRING_DATASOURCE_PASSWORD: ${MYSQL_LOCKER_PASSWORD}
+    networks:
+      - aeis-net
+    depends_on:
+      mysql-locker:
+        condition: service_healthy
+
   api-gateway:
     build: backend/api-gateway
     environment:
       JWT_SECRET: ${JWT_SECRET}
       CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS}
       AUTH_SERVICE_URL: http://auth-service:8081
+      LOCKER_SERVICE_URL: http://locker-service:8082
     ports:
       - "8080:8080"
     networks:
       - aeis-net
     depends_on:
       - auth-service
+      - locker-service
 
   # Los siguientes servicios se agregan en fases posteriores del PLAN.md:
-  # locker-service, rental-service, help-service,
+  # rental-service, help-service,
   # frontend, prometheus, grafana, loki, promtail.
